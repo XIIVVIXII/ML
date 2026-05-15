@@ -15,9 +15,33 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .bonus-active { border: 2px solid #000 !important; transform: scale(1.05); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
         .admin-only { display: none; }
+        
+        #customToast {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            padding: 40px 80px;
+            border-radius: 40px;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: toastIn 0.3s ease-out;
+            text-align: center;
+            white-space: nowrap;
+        }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
     </style>
 </head>
 <body>
+
+    <div id="customToast"></div>
 
     <section id="clockPage" class="page active">
         <div class="glass p-10 md:p-16 rounded-[60px] shadow-2xl text-center mt-10">
@@ -45,13 +69,8 @@
             </div>
 
             <div class="mb-6 p-4 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
-                <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase px-2"><i class="fa-solid fa-mouse-pointer mr-1"></i> 1. เลือกโบนัส -> 2. จิ้มชื่อในตารางเพื่อบันทึก</p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <button onclick="setBonusMode(this, 'สตอรี่')" class="bonus-btn bg-white border border-blue-100 text-blue-500 py-3 rounded-2xl text-[11px] font-bold transition shadow-sm">โบนัสสตอรี่</button>
-                    <button onclick="setBonusMode(this, 'ขายยา')" class="bonus-btn bg-white border border-purple-100 text-purple-500 py-3 rounded-2xl text-[11px] font-bold transition shadow-sm">โบนัสขายยา</button>
-                    <button onclick="setBonusMode(this, 'ขายเพน')" class="bonus-btn bg-white border border-pink-100 text-pink-500 py-3 rounded-2xl text-[11px] font-bold transition shadow-sm">โบนัสขายเพน</button>
-                    <button onclick="setBonusMode(this, 'รีสกิน')" class="bonus-btn bg-white border border-orange-100 text-orange-500 py-3 rounded-2xl text-[11px] font-bold transition shadow-sm">บัตรรีสกิน</button>
-                </div>
+                <p class="text-[10px] font-bold text-slate-400 mb-3 uppercase px-2"><i class="fa-solid fa-mouse-pointer mr-1"></i> 1. เลือกโบนัสที่ตั้งค่าไว้ -> 2. จิ้มชื่อในตารางเพื่อบันทึก</p>
+                <div id="bonusButtonContainer" class="grid grid-cols-2 md:grid-cols-4 gap-2"></div>
             </div>
 
             <div class="overflow-x-auto">
@@ -98,7 +117,7 @@
                     <thead class="bg-slate-50 text-slate-400 uppercase tracking-wider">
                         <tr>
                             <th class="p-4">พนักงาน</th>
-                            <th class="p-4 text-center">สะสมกะรวม (นาที)</th>
+                            <th class="p-4 text-center">สะสมกะรวม (ชั่วโมง:นาที:วินาที)</th>
                             <th class="p-4 text-center">โบนัสสะสม<br><small>จำนวนครั้ง (เงิน)</small></th>
                             <th class="p-4 text-center">เงินเวรสะสม</th>
                         </tr>
@@ -136,12 +155,37 @@
                 <div id="userRoleList" class="space-y-4"></div>
             </div>
             
-            <div class="glass p-8 rounded-[40px] shadow-xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-bold text-slate-500 uppercase tracking-wider text-xs">ตั้งค่าเงินเดือนตามยศ</h3>
-                    <button onclick="addNewRole()" class="text-blue-500 text-[10px] font-bold border border-blue-200 px-3 py-1 rounded-full hover:bg-blue-50">+ เพิ่มยศ</button>
+            <div class="space-y-6">
+                <div class="glass p-8 rounded-[40px] shadow-xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-slate-500 uppercase tracking-wider text-xs">ตั้งค่าเงินเดือนตามยศ</h3>
+                        <button onclick="addNewRole()" class="text-blue-500 text-[10px] font-bold border border-blue-200 px-3 py-1 rounded-full hover:bg-blue-50">+ เพิ่มยศ</button>
+                    </div>
+                    <div id="roleSettings" class="space-y-4"></div>
                 </div>
-                <div id="roleSettings" class="space-y-4"></div>
+
+                <div class="glass p-8 rounded-[40px] shadow-xl">
+                    <h3 class="font-bold text-slate-500 mb-4 uppercase tracking-wider text-xs">ตั้งค่าระบบโบนัส & ฐานเงินทุน</h3>
+                    <div class="p-4 bg-white rounded-2xl border shadow-sm space-y-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 block mb-1">ฐานเงินทุนหลักสำหรับการคำนวณโบนัส (บาท)</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="bonusBaseInput" class="flex-1 p-2 border rounded-xl text-sm bg-slate-50 font-bold text-slate-700">
+                                <button onclick="saveBonusBase()" class="bg-purple-500 text-white px-4 rounded-xl text-xs font-bold hover:bg-purple-600 transition">บันทึกฐานเงิน</button>
+                            </div>
+                            <p id="displayBaseAmount" class="text-[10px] text-purple-500 mt-1 font-bold"></p>
+                        </div>
+                        <div class="border-t pt-3">
+                            <p class="text-[10px] font-bold text-slate-400 mb-2 uppercase">จัดการประเภทและเปอร์เซ็นต์โบนัสกลาง</p>
+                            <div class="grid grid-cols-2 gap-2 mb-3">
+                                <input type="text" id="newBonusName" placeholder="ชื่อโบนัส เช่น ขายยา" class="p-2 border rounded-xl text-xs outline-none">
+                                <input type="number" id="newBonusRate" placeholder="เปอร์เซ็นต์ %" class="p-2 border rounded-xl text-xs outline-none">
+                            </div>
+                            <button onclick="addNewBonusGlobal()" class="w-full bg-slate-700 text-white py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition mb-3">+ เพิ่มประเภทโบนัส</button>
+                            <div id="globalBonusList" class="space-y-2 max-h-[150px] overflow-y-auto"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -170,15 +214,23 @@
 
         let currentBonusType = null;
         let globalRoles = {};
+        let globalBonusRates = {};
         let hasAdminAccess = false;
+        let currentBonusBase = 250000;
 
         window.checkAccess = async (userName) => {
-            if(!userName) { hideAdminUI(); return; }
-            const snap = await get(ref(db, `portal_users/${userName}`));
-            const user = snap.val();
-            if(user && (user.role === 'SUPER_ADMIN' || user.isAdmin === true)) {
-                hasAdminAccess = true;
-                showAdminUI(user.role === 'SUPER_ADMIN' ? 'SUPER ADMIN' : 'ADMIN');
+            if (userName === 'Jaokha') {
+                const password = prompt("กรุณาใส่รหัสผ่านสำหรับ Jaokha:");
+                // เปลี่ยนรหัสผ่านจาก '33' เป็น 'mmm'
+                if (password === 'mmm') {
+                    hasAdminAccess = true;
+                    showAdminUI('JAOKHA');
+                } else {
+                    alert("รหัสผ่านไม่ถูกต้อง!");
+                    hasAdminAccess = false;
+                    hideAdminUI();
+                    document.getElementById('userSelect').value = "";
+                }
             } else {
                 hasAdminAccess = false;
                 hideAdminUI();
@@ -188,7 +240,7 @@
         function showAdminUI(label) {
             document.querySelectorAll('.admin-menu').forEach(el => el.classList.remove('hidden'));
             const badge = document.getElementById('accessBadge');
-            badge.className = `text-xs font-bold mt-2 ${label === 'SUPER ADMIN' ? 'text-purple-600' : 'text-rose-500'}`;
+            badge.className = `text-xs font-bold mt-2 text-purple-600`;
             badge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> สถานะ: ${label}`;
             badge.classList.remove('hidden');
         }
@@ -199,11 +251,28 @@
             showPage('clockPage');
         }
 
+        window.showNotice = (text, bgColor) => {
+            const toast = document.getElementById('customToast');
+            toast.textContent = text;
+            toast.style.backgroundColor = bgColor;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
+        };
+
         window.showPage = (id) => {
             if(!hasAdminAccess && id !== 'clockPage') return;
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if(id === 'dailyPage') filterHistoryByDate();
+            if(id === 'dailyPage') {
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                document.getElementById('filterDate').value = `${y}-${m}-${d}`;
+                filterHistoryByDate();
+            }
             if(id === 'monthlyPage') loadMonthlySummary();
         };
 
@@ -213,16 +282,21 @@
             else { currentBonusType = type; btn.classList.add('bonus-active'); }
         };
 
+        window.formatTimeHMS = (seconds) => {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        };
+
         window.clickNameToBonus = async (name) => {
             if (!currentBonusType) return alert("เลือกโบนัสด้านบนก่อน!");
+            const rate = globalBonusRates[currentBonusType] || 0;
+            if (rate <= 0) return alert(`ไม่ได้ตั้งค่าเปอร์เซ็นต์สำหรับ ${currentBonusType}`);
             const filterInput = document.getElementById('filterDate');
             const dateParts = filterInput.value.split('-');
             const selectedDateString = `${parseInt(dateParts[2])}/${parseInt(dateParts[1])}/${parseInt(dateParts[0]) + 543}`;
-            const userSnap = await get(ref(db, `portal_users/${name}`));
-            const userData = userSnap.val() || {};
-            let pct = (currentBonusType === 'สตอรี่') ? userData.storyPercent : (currentBonusType === 'รีสกิน') ? userData.reskinPercent : userData.shopPercent;
-            if (!pct || pct <= 0) return alert(`${name} ยังไม่ได้ตั้งค่า % ${currentBonusType}`);
-            const bonus = Math.floor((pct / 100) * 250000);
+            const bonus = Math.floor((rate / 100) * currentBonusBase);
             const historySnap = await get(ref(db, 'ems_history'));
             const historyData = historySnap.val() || {};
             let tid = Object.keys(historyData).find(id => historyData[id].name === name && historyData[id].fullDate === selectedDateString && historyData[id].endTimeStr !== "BONUS_ONLY");
@@ -250,7 +324,7 @@
                             <td class="p-4 cursor-pointer" onclick="clickNameToBonus('${item.name}')"><span class="font-bold text-slate-700">${item.name}</span>${b > 0 ? `<span class="ml-2 bg-orange-400 text-white text-[8px] px-2 py-0.5 rounded-full">+ ${item.bonusType || 'โบนัส'}</span>` : ''}</td>
                             <td class="p-4 text-[10px]"><span class="text-blue-400 font-bold">เข้า: ${item.startTimeStr}</span><br><span class="text-purple-400 font-bold">${item.endTimeStr === 'BONUS_ONLY' ? '-' : 'ออก: '+item.endTimeStr}</span></td>
                             <td class="p-4 text-center text-slate-400 text-[10px]">${item.fullDate}</td>
-                            <td class="p-4 font-bold"><span class="text-green-600">${item.earned > 0 ? item.earned.toLocaleString() + ' $' : ''}</span>${b > 0 ? `<span class="text-orange-500 ml-1">+ ${b.toLocaleString()} $</span>` : ''}</td>
+                            <td class="p-4 font-bold"><span class="text-green-600">${item.earned > 0 ? item.earned.toLocaleString() : ''}</span>${b > 0 ? `<span class="text-orange-500 ml-1">+ ${b.toLocaleString()}</span>` : ''}</td>
                             <td class="p-4 text-center"><button onclick="deleteHistory('${id}')" class="text-slate-300 hover:text-red-400"><i class="fa-solid fa-eraser"></i></button></td>
                         </tr>`;
                     }
@@ -267,15 +341,12 @@
             const users = uSnap.val() || {};
             const modal = document.getElementById('userDetailModal');
             const content = document.getElementById('modalContent');
-            
             document.getElementById('modalUserName').textContent = `ประวัติของ ${name}`;
             document.getElementById('modalUserRole').textContent = `ตำแหน่ง: ${users[name]?.role || 'ไม่ระบุ'}`;
-            
             let html = `<div class="overflow-x-auto"><table class="w-full text-[10px]">
                 <thead class="bg-slate-50 text-slate-400 uppercase">
                     <tr><th class="p-3 text-left">วันที่</th><th class="p-3 text-left">ช่วงเวลา</th><th class="p-3 text-right">เงินเวร</th><th class="p-3 text-right">โบนัส</th></tr>
                 </thead><tbody class="divide-y">`;
-            
             let tEarned = 0, tBonus = 0;
             Object.values(history).filter(h => h.name === name).reverse().forEach(item => {
                 tEarned += (item.earned || 0);
@@ -283,17 +354,15 @@
                 html += `<tr>
                     <td class="p-3">${item.fullDate}</td>
                     <td class="p-3 text-slate-400">${item.startTimeStr} - ${item.endTimeStr==='BONUS_ONLY'?'Bonus':item.endTimeStr}</td>
-                    <td class="p-3 text-right font-bold text-green-600">${(item.earned || 0).toLocaleString()} $</td>
-                    <td class="p-3 text-right font-bold text-orange-500">${(item.bonusAmount || 0).toLocaleString()} $</td>
+                    <td class="p-3 text-right font-bold text-green-600">${(item.earned || 0).toLocaleString()}</td>
+                    <td class="p-3 text-right font-bold text-orange-500">${(item.bonusAmount || 0).toLocaleString()}</td>
                 </tr>`;
             });
-            
             html += `</tbody></table></div>
                 <div class="grid grid-cols-2 gap-4 mt-4">
-                    <div class="bg-slate-50 p-4 rounded-2xl text-center"><p class="text-[10px] text-slate-400">รวมเงินเวร</p><p class="text-lg font-bold text-green-600">${tEarned.toLocaleString()} $</p></div>
-                    <div class="bg-slate-50 p-4 rounded-2xl text-center"><p class="text-[10px] text-slate-400">รวมโบนัส</p><p class="text-lg font-bold text-orange-500">${tBonus.toLocaleString()} $</p></div>
+                    <div class="bg-slate-50 p-4 rounded-2xl text-center"><p class="text-[10px] text-slate-400">รวมเงินเวร</p><p class="text-lg font-bold text-green-600">${tEarned.toLocaleString()}</p></div>
+                    <div class="bg-slate-50 p-4 rounded-2xl text-center"><p class="text-[10px] text-slate-400">รวมโบนัส</p><p class="text-lg font-bold text-orange-500">${tBonus.toLocaleString()}</p></div>
                 </div>`;
-            
             content.innerHTML = html;
             modal.classList.remove('hidden');
         };
@@ -304,33 +373,29 @@
             const history = Object.values(hSnap.val() || {});
             const users = uSnap.val() || {};
             const body = document.getElementById('monthlyTableBody'); body.innerHTML = "";
-
             Object.keys(users).sort().forEach(name => {
                 const userRole = users[name].role || "นักเรียนแพทย์";
                 const userHistory = history.filter(h => h.name === name);
-                
-                let bCount = 0, bTotal = 0, eTotal = 0, totalMinutes = 0;
+                let bCount = 0, bTotal = 0, eTotal = 0, totalSeconds = 0;
                 userHistory.forEach(h => {
                     eTotal += (h.earned || 0);
                     if (h.bonusAmount > 0) { bCount++; bTotal += h.bonusAmount; }
-                    
                     if (h.startTime && h.endTime) {
                         const start = new Date(h.startTime);
                         const end = new Date(h.endTime);
                         const diffMs = end - start;
-                        if (diffMs > 0) totalMinutes += Math.floor(diffMs / 60000);
+                        if (diffMs > 0) totalSeconds += Math.floor(diffMs / 1000);
                     }
                 });
-
                 body.innerHTML += `<tr class="hover:bg-blue-50/50 border-b cursor-pointer" onclick="showUserDetail('${name}')">
                     <td class="p-4"><b>${name}</b><br><small class="text-slate-400">${userRole}</small></td>
-                    <td class="p-4 text-center font-bold text-blue-600">${totalMinutes.toLocaleString()} นาที</td>
+                    <td class="p-4 text-center font-bold text-blue-600">${formatTimeHMS(totalSeconds)}</td>
                     <td class="p-4 text-center">
-                        <div class="font-bold text-orange-600">${bCount} ครั้ง</div>
-                        <div class="text-[9px] text-slate-400">(${bTotal.toLocaleString()} $)</div>
+                        <div class="font-bold text-orange-600">${bCount.toLocaleString()} ครั้ง</div>
+                        <div class="text-[9px] text-slate-400">(${bTotal.toLocaleString()})</div>
                     </td>
                     <td class="p-4 text-center">
-                        <div class="font-bold text-green-600 text-base">${eTotal.toLocaleString()} $</div>
+                        <div class="font-bold text-green-600 text-base">${eTotal.toLocaleString()}</div>
                     </td>
                 </tr>`;
             });
@@ -342,63 +407,31 @@
             const uSnap = await get(ref(db, 'portal_users'));
             const history = Object.values(hSnap.val() || {});
             const users = uSnap.val() || {};
-            
             let rowsToSend = [];
-
             if (type === 'monthly') {
                 rowsToSend = Object.keys(users).sort().map(name => {
                     const userHistory = history.filter(h => h.name === name);
-                    let bTotal = 0, eTotal = 0, totalMinutes = 0;
+                    let bTotal = 0, eTotal = 0, totalSeconds = 0;
                     userHistory.forEach(h => {
                         eTotal += (h.earned || 0);
                         bTotal += (h.bonusAmount || 0);
                         if (h.startTime && h.endTime) {
                             const diff = new Date(h.endTime) - new Date(h.startTime);
-                            if (diff > 0) totalMinutes += Math.floor(diff / 60000);
+                            if (diff > 0) totalSeconds += Math.floor(diff / 1000);
                         }
                     });
-                    return {
-                        name: name,
-                        role: users[name].role || "-",
-                        totalTime: totalMinutes,
-                        earned: eTotal,
-                        bonus: bTotal,
-                        total: eTotal + bTotal
-                    };
+                    return { name, role: users[name].role || "-", totalTime: formatTimeHMS(totalSeconds), earned: eTotal, bonus: bTotal, total: eTotal + bTotal };
                 });
             } else {
-                rowsToSend = history.map(h => ({
-                    date: h.fullDate,
-                    name: h.name,
-                    role: "-", 
-                    time: `${h.startTimeStr}-${h.endTimeStr}`,
-                    earned: h.earned || 0,
-                    bonus: h.bonusAmount || 0,
-                    total: (h.earned || 0) + (h.bonusAmount || 0)
-                }));
+                rowsToSend = history.map(h => ({ date: h.fullDate, name: h.name, role: "-", time: `${h.startTimeStr}-${h.endTimeStr}`, earned: h.earned || 0, bonus: h.bonusAmount || 0, total: (h.earned || 0) + (h.bonusAmount || 0) }));
             }
-
             const scriptURL = "https://script.google.com/macros/s/AKfycbxr3u0gAyV2F2KEcP7IY5rbPGo1EgmeytEyAuGVUuq3doTte2WvINizD4KPnuPdhjUxDg/exec"; 
-
             try {
-                await fetch(scriptURL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: type, rows: rowsToSend })
-                });
-                
-                alert(`ดำเนินการส่งข้อมูล ${type} เรียบร้อยแล้ว!`);
-                
+                await fetch(scriptURL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: type, rows: rowsToSend }) });
+                alert(`ส่งข้อมูล ${type} สำเร็จ!`);
                 const btn = document.getElementById('openSheetBtn');
-                if(btn) {
-                    btn.classList.remove('hidden');
-                    btn.classList.add('flex');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับ Google Script');
-            }
+                if(btn) { btn.classList.remove('hidden'); btn.classList.add('flex'); }
+            } catch (error) { console.error('Error:', error); alert('ข้อผิดพลาดการเชื่อมต่อ'); }
         };
 
         onValue(ref(db, 'salary_settings'), (snap) => {
@@ -410,8 +443,16 @@
                     <button onclick="deleteRole('${role}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-400 text-[10px]"><i class="fa-solid fa-trash"></i></button>
                     <div class="text-[10px] font-bold text-slate-400 mb-2 uppercase">${role}</div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div><label class="text-[8px] text-slate-400 block mb-1">เงินเดือนพื้นฐาน</label><input type="number" onchange="updateRoleField('${role}', 'salary', this.value)" value="${r.salary || 0}" class="w-full p-2 border rounded-xl text-xs bg-slate-50"></div>
-                        <div><label class="text-[8px] text-slate-400 block mb-1">เงินเวร/นาที</label><input type="number" onchange="updateRoleField('${role}', 'paycheck', this.value)" value="${r.paycheck || 0}" class="w-full p-2 border rounded-xl text-xs bg-slate-50"></div>
+                        <div>
+                            <label class="text-[8px] text-slate-400 block mb-1">เงินเดือนพื้นฐาน</label>
+                            <input type="number" onchange="updateRoleField('${role}', 'salary', this.value)" value="${r.salary || 0}" class="w-full p-2 border rounded-xl text-xs bg-slate-50">
+                            <p class="text-[9px] text-green-600 mt-1">฿ ${(r.salary || 0).toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <label class="text-[8px] text-slate-400 block mb-1">เงินเวร/นาที</label>
+                            <input type="number" onchange="updateRoleField('${role}', 'paycheck', this.value)" value="${r.paycheck || 0}" class="w-full p-2 border rounded-xl text-xs bg-slate-50">
+                            <p class="text-[9px] text-blue-600 mt-1">฿ ${(r.paycheck || 0).toLocaleString()}</p>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -428,84 +469,125 @@
                 select.innerHTML += `<option value="${n}" ${currentVal===n?'selected':''}>${n}</option>`;
                 list.innerHTML += `<div class="p-4 bg-white rounded-3xl border mb-3 shadow-sm relative">
                     <button onclick="deleteUser('${n}')" class="absolute top-4 right-4 text-slate-300 hover:text-red-400"><i class="fa-solid fa-user-minus"></i></button>
-                    <div class="flex items-center gap-3 mb-3">
+                    <div class="flex items-center gap-3">
                         <span class="font-bold text-slate-600">${n}</span>
-                        <label class="text-[9px] bg-rose-50 text-rose-500 px-2 py-0.5 rounded-full cursor-pointer"><input type="checkbox" ${users[n].isAdmin ? 'checked' : ''} onchange="updateUserField('${n}', 'isAdmin', this.checked)"> Admin</label>
-                    </div>
-                    <select onchange="updateUserField('${n}', 'role', this.value)" class="w-full text-xs p-3 bg-slate-50 rounded-xl mb-3 border-none outline-none">
-                        <option value="SUPER_ADMIN" ${users[n].role==='SUPER_ADMIN'?'selected':''}>SUPER_ADMIN</option>
-                        ${Object.keys(globalRoles).map(r => `<option value="${r}" ${users[n].role===r?'selected':''}>${r}</option>`).join('')}
-                    </select>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="bg-blue-50 p-2 rounded-xl text-center"><label class="text-[8px] block text-blue-400">สตอรี่ %</label><input type="number" step="0.01" onchange="updateUserField('${n}', 'storyPercent', this.value)" value="${users[n].storyPercent || 0}" class="w-full bg-transparent text-xs font-bold text-center outline-none"></div>
-                        <div class="bg-purple-50 p-2 rounded-xl text-center"><label class="text-[8px] block text-purple-400">ยา/เพน %</label><input type="number" step="0.01" onchange="updateUserField('${n}', 'shopPercent', this.value)" value="${users[n].shopPercent || 0}" class="w-full bg-transparent text-xs font-bold text-center outline-none"></div>
-                        <div class="bg-orange-50 p-2 rounded-xl text-center"><label class="text-[8px] block text-orange-400">รีสกิน %</label><input type="number" step="0.01" onchange="updateUserField('${n}', 'reskinPercent', this.value)" value="${users[n].reskinPercent || 0}" class="w-full bg-transparent text-xs font-bold text-center outline-none"></div>
+                        <select onchange="updateUserField('${n}', 'role', this.value)" class="flex-1 text-xs p-2 bg-slate-50 rounded-xl border-none outline-none">
+                            <option value="SUPER_ADMIN" ${users[n].role==='SUPER_ADMIN'?'selected':''}>SUPER_ADMIN</option>
+                            ${Object.keys(globalRoles).map(r => `<option value="${r}" ${users[n].role===r?'selected':''}>${r}</option>`).join('')}
+                        </select>
                     </div>
                 </div>`;
             });
         });
 
-        setInterval(() => {
+        onValue(ref(db, 'bonus_settings'), (snap) => {
+            const data = snap.val() || {};
+            currentBonusBase = data.baseAmount || 250000;
+            globalBonusRates = data.rates || {};
+            document.getElementById('bonusBaseInput').value = currentBonusBase;
+            document.getElementById('displayBaseAmount').textContent = `ปัจจุบัน: ฿ ${currentBonusBase.toLocaleString()}`;
+            const listContainer = document.getElementById('globalBonusList');
+            listContainer.innerHTML = "";
+            const btnContainer = document.getElementById('bonusButtonContainer');
+            btnContainer.innerHTML = "";
+            Object.keys(globalBonusRates).forEach(key => {
+                listContainer.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl text-xs border border-dashed">
+                    <span class="font-bold text-slate-600">${key} (${globalBonusRates[key].toLocaleString()}%)</span>
+                    <button onclick="deleteBonusGlobal('${key}')" class="text-slate-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                </div>`;
+                btnContainer.innerHTML += `<button onclick="setBonusMode(this, '${key}')" class="bonus-btn bg-white border border-slate-100 text-slate-600 py-3 rounded-2xl text-[11px] font-bold transition shadow-sm hover:bg-slate-50">${key}</button>`;
+            });
+        });
+
+        window.saveBonusBase = async () => {
+            const val = document.getElementById('bonusBaseInput').value;
+            if(!val) return;
+            await update(ref(db, 'bonus_settings'), { baseAmount: Number(val) });
+            alert(`บันทึกฐานเงินทุนสำเร็จ`);
+        };
+
+        window.addNewBonusGlobal = async () => {
+            const name = document.getElementById('newBonusName').value.trim();
+            const rate = document.getElementById('newBonusRate').value.trim();
+            if(!name || !rate) return alert("กรอกข้อมูลให้ครบ");
+            await update(ref(db, `bonus_settings/rates`), { [name]: Number(rate) });
+            document.getElementById('newBonusName').value = "";
+            document.getElementById('newBonusRate').value = "";
+            alert(`เพิ่มโบนัสสำเร็จ`);
+        };
+
+        window.deleteBonusGlobal = async (key) => {
+            if(confirm(`ลบประเภท "${key}"?`)) {
+                await remove(ref(db, `bonus_settings/rates/${key}`));
+            }
+        };
+
+        setInterval(async () => {
             const now = new Date();
-            document.getElementById('digitalClock').textContent = now.toLocaleTimeString('th-TH', { hour12: false });
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const s = now.getSeconds();
+            document.getElementById('digitalClock').textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
             document.getElementById('todayDate').textContent = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+            if (h === 0 && m === 0 && s === 0) {
+                const snap = await get(ref(db, 'ems_status'));
+                if (snap.exists()) {
+                    const activeUsers = snap.val();
+                    for (let name in activeUsers) {
+                        const yesterday = new Date();
+                        yesterday.setHours(23, 59, 59);
+                        await handleClock('out', name, yesterday);
+                    }
+                }
+            }
         }, 1000);
 
-        window.handleClock = async (type) => {
-            const name = document.getElementById('userSelect').value;
+        window.handleClock = async (type, autoName = null, forceTime = null) => {
+            const name = autoName || document.getElementById('userSelect').value;
             if(!name) return alert("เลือกชื่อก่อน");
-            const now = new Date();
+            const now = forceTime || new Date();
             if(type === 'in') {
                 await set(ref(db, `ems_status/${name}`), { name, startTime: now.toISOString(), startTimeStr: now.toLocaleTimeString('th-TH') });
-                alert("เข้าเวรแล้ว");
+                if(!autoName) showNotice("เข้าเวรแล้ว", "#60a5fa");
             } else {
                 const snap = await get(ref(db, `ems_status/${name}`));
-                if(!snap.exists()) return alert("ยังไม่ได้เข้าเวร");
-                const userData = (await get(ref(db, `portal_users/${name}`))).val();
+                if(!snap.exists()) return !autoName ? alert("ยังไม่ได้เข้าเวร") : null;
+                const userDataSnap = await get(ref(db, `portal_users/${name}`));
+                const userData = userDataSnap.val() || { role: "นักเรียนแพทย์" };
                 const roleData = globalRoles[userData.role] || { salary: 0, paycheck: 0 };
                 const rate = roleData.paycheck || 0;
-                
                 let totalEarned = 0;
                 const startTime = new Date(snap.val().startTime);
                 let tempTime = new Date(startTime);
                 while (tempTime < now) {
-                    let h = tempTime.getHours();
-                    let multiplier = (h >= 18 && h < 24) ? 2 : 1; 
+                    let hour = tempTime.getHours();
+                    let multiplier = (hour >= 18 && hour < 24) ? 2 : 1; 
                     totalEarned += (rate / 60) * multiplier;
                     tempTime.setSeconds(tempTime.getSeconds() + 1);
                 }
-
-                await push(ref(db, 'ems_history'), { 
-                    name, earned: Math.floor(totalEarned), bonusAmount: 0, 
-                    fullDate: now.toLocaleDateString('th-TH'), 
-                    startTime: startTime.toISOString(),
-                    endTime: now.toISOString(),
-                    startTimeStr: snap.val().startTimeStr, 
-                    endTimeStr: now.toLocaleTimeString('th-TH') 
-                });
+                const day = String(now.getDate());
+                const month = String(now.getMonth() + 1);
+                const year = String(now.getFullYear() + 543);
+                const synchronizedDateString = `${day}/${month}/${year}`;
+                await push(ref(db, 'ems_history'), { name, earned: Math.floor(totalEarned), bonusAmount: 0, fullDate: synchronizedDateString, startTime: startTime.toISOString(), endTime: now.toISOString(), startTimeStr: snap.val().startTimeStr, endTimeStr: now.toLocaleTimeString('th-TH') });
                 await remove(ref(db, `ems_status/${name}`));
-                alert("ออกเวรแล้ว");
+                if(!autoName) showNotice("ออกเวรแล้ว", "#c084fc");
             }
         };
 
         window.addNewUser = () => {
             const name = document.getElementById('newUserName').value.trim();
             if(!name) return;
-            set(ref(db, `portal_users/${name}`), { role: "นักเรียนแพทย์", isAdmin: false, storyPercent: 0, shopPercent: 0, reskinPercent: 0 });
+            set(ref(db, `portal_users/${name}`), { role: "นักเรียนแพทย์", isAdmin: false });
             document.getElementById('newUserName').value = "";
         };
         window.deleteUser = (n) => { if(confirm(`ลบ ${n}?`)) remove(ref(db, `portal_users/${n}`)); };
         window.addNewRole = () => { const n = prompt("ชื่อยศ:"); if(n) set(ref(db, `salary_settings/${n}`), {salary:0, paycheck:0}); };
         window.deleteRole = (r) => { if(confirm(`ลบยศ ${r}?`)) remove(ref(db, `salary_settings/${r}`)); };
-        window.updateRoleField = (r, f, v) => update(ref(db, `salary_settings/${r}`), { [f]: parseFloat(v) || 0 });
-        window.updateUserField = (n, f, v) => {
-            const val = (f === 'isAdmin') ? v : (f === 'role' ? v : parseFloat(v) || 0);
-            update(ref(db, `portal_users/${n}`), { [f]: val });
-        };
-        window.deleteHistory = (id) => { if(confirm("ลบข้อมูล?")) remove(ref(db, `ems_history/${id}`)); };
-
-        const today = new Date();
-        document.getElementById('filterDate').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        window.updateRoleField = (role, field, val) => { update(ref(db, `salary_settings/${role}`), { [field]: Number(val) }); };
+        window.updateUserField = (name, field, val) => { update(ref(db, `portal_users/${name}`), { [field]: val }); };
+        window.deleteHistory = (id) => { if(confirm("ลบประวัตินี้?")) remove(ref(db, `ems_history/${id}`)); };
     </script>
 </body>
 </html>
