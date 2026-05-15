@@ -120,6 +120,7 @@
                             <th class="p-4 text-center">สะสมกะรวม (ชั่วโมง:นาที:วินาที)</th>
                             <th class="p-4 text-center">โบนัสสะสม<br><small>จำนวนครั้ง (เงิน)</small></th>
                             <th class="p-4 text-center">เงินเวรสะสม</th>
+                            <th class="p-4 text-center bg-slate-100/50">ยอดรวมสุทธิ</th>
                         </tr>
                     </thead>
                     <tbody id="monthlyTableBody" class="divide-y divide-slate-100"></tbody>
@@ -221,7 +222,6 @@
         window.checkAccess = async (userName) => {
             if (userName === 'Jaokha') {
                 const password = prompt("กรุณาใส่รหัสผ่านสำหรับ Jaokha:");
-                // เปลี่ยนรหัสผ่านจาก '33' เป็น 'mmm'
                 if (password === 'mmm') {
                     hasAdminAccess = true;
                     showAdminUI('JAOKHA');
@@ -376,6 +376,9 @@
             Object.keys(users).sort().forEach(name => {
                 const userRole = users[name].role || "นักเรียนแพทย์";
                 const userHistory = history.filter(h => h.name === name);
+                const roleData = globalRoles[userRole] || { salary: 0 };
+                const baseSalary = roleData.salary || 0;
+                
                 let bCount = 0, bTotal = 0, eTotal = 0, totalSeconds = 0;
                 userHistory.forEach(h => {
                     eTotal += (h.earned || 0);
@@ -387,6 +390,10 @@
                         if (diffMs > 0) totalSeconds += Math.floor(diffMs / 1000);
                     }
                 });
+
+                // ตรวจสอบเงื่อนไข: ถ้าเงินเวรเป็น 0 จะไม่แสดงยอดรวมสุทธิและฐานเงินเดือน
+                const displayTotal = eTotal > 0 ? (eTotal + bTotal + baseSalary).toLocaleString() : "";
+
                 body.innerHTML += `<tr class="hover:bg-blue-50/50 border-b cursor-pointer" onclick="showUserDetail('${name}')">
                     <td class="p-4"><b>${name}</b><br><small class="text-slate-400">${userRole}</small></td>
                     <td class="p-4 text-center font-bold text-blue-600">${formatTimeHMS(totalSeconds)}</td>
@@ -396,6 +403,9 @@
                     </td>
                     <td class="p-4 text-center">
                         <div class="font-bold text-green-600 text-base">${eTotal.toLocaleString()}</div>
+                    </td>
+                    <td class="p-4 text-center bg-slate-100/30">
+                        <div class="font-bold text-slate-700 text-base">${displayTotal}</div>
                     </td>
                 </tr>`;
             });
